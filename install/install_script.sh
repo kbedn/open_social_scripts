@@ -14,6 +14,17 @@ fn_sleep() {
   fi
 }
 
+# Checks the return code for the latest command and exits if it was non-zero.
+# Will exit with the returned error code.
+exit_on_error() {
+    retcode=$?
+    if [ $retcode -ne 0 ]
+    then
+        echo "There was an error with the last command."
+        exit $retcode
+    fi
+}
+
 # Set the correct settings.php requires scripts folder to be mounted in /var/www/scripts/social.
 chmod 777 /var/www/html/sites/default
 
@@ -42,6 +53,7 @@ if [[ "$VIRTUAL_HOST" != "" ]]; then
 fi
 
 drush -y site-install social --db-url=mysql://root:root@db:3306/social --account-pass=admin install_configure_form.update_status_module='array(FALSE,FALSE)' --site-name='Open Social';
+exit_on_error
 fn_sleep
 echo "installed drupal"
 if [[ $NFS != "nfs" ]]
@@ -73,12 +85,15 @@ chown -R www-data:www-data /var/www/html/profiles/contrib/social/tests/behat/fea
 fn_sleep
 echo "settings.php and files directory permissions"
 drush pm-enable social_demo -y
+exit_on_error
 fn_sleep
 echo "enabled module"
 drush cc drush
 drush sda file user group topic event eventenrollment post comment like # Add the demo content
+exit_on_error
 #drush sdr like eventenrollment topic event post comment group user file # Remove the demo content
 drush pm-uninstall social_demo -y
+exit_on_error
 fn_sleep
 echo "flush image caches"
 drush cc drush
